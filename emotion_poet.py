@@ -39,6 +39,7 @@ font_settings = {
 # TRUST MECHANIC
 # =======================
 TRUST_TIME = 25  # seconds before box disappears
+FRACTURE_DELAY = 6  # seconds before words fall apart
 
 # =======================
 # POEM GENERATION
@@ -88,10 +89,20 @@ def draw_fractured_box(frame, x, y, w, h, emotion):
             1
         )
 
+
 # =======================
 # MEMORY
-# =======================
-poems = []  # each: text, x, y, alpha, drift, emotion
+poems = []
+# each poem:
+# {
+#   "words": [...],
+#   "positions": [(x, y), ...],
+#   "alpha": 255,
+#   "fractured": False,
+#   "emotion": emotion,
+#   "created": time
+# }
+
 
 cap = cv2.VideoCapture(0)
 start_time = time.time()
@@ -130,13 +141,24 @@ while True:
         if now - last_poem_time > cooldown:
             text = generate_poem(emotion, watch_time, distance)
 
+            words = text.split(" ")
+            base_x = random.randint(40, w - 400)    
+            base_y = random.randint(80, h - 40)
+
+            positions = []
+            x_cursor = base_x
+
+            for word in words:
+                positions.append([x_cursor, base_y])
+                x_cursor += len(word) * 12 + 10  # spacing
+
             poems.append({
-                "text": text,
-                "x": random.randint(40, w - 400),
-                "y": random.randint(80, h - 40),
+                "words": words,
+                "positions": positions,
                 "alpha": 255,
-                "drift": random.choice([-1, 0, 1]),
-                "emotion": emotion
+                "fractured": False,
+                "emotion": emotion,
+                "created": now
             })
 
             last_poem_time = now
@@ -176,26 +198,42 @@ while True:
     overlay = frame.copy()
 
     for poem in poems[:]:
-        poem["alpha"] -= 1
-        poem["y"] += poem["drift"]
+        age = now - poem["created"]
+
+        # trigger fracture
+        if not poem["fractured"] and age > FRACTURE_DELAY:
+            poem["fractured"] = True
+
+        font, scale, thickness = font_settings.get(poem["emotion"], font_settings["neutral"])
+
+        for i, word in enumerate(poem["words"]):
+            x, y = poem["positions"][i]
+
+            # falling behavior
+            if poem["fractured"]:
+                y += random.randint(1, 4)
+                poem["positions"][i][1] = y
+
+            poem["alpha"] -= 0.5
+            color = (int(poem["alpha"]), int(poem["alpha"]), int(poem["alpha"]))
+
+            if poem["alpha"] <= 0 or y > h:
+                continue
+
+            cv2.putText(
+                overlay,
+                word,
+                (x, y),
+                font,
+                scale,
+                color,
+                thickness,
+                cv2.LINE_AA
+            )
 
         if poem["alpha"] <= 0:
             poems.remove(poem)
-            continue
 
-        font, scale, thickness = font_settings.get(poem["emotion"], font_settings["neutral"])
-        color = (poem["alpha"], poem["alpha"], poem["alpha"])
-
-        cv2.putText(
-            overlay,
-            poem["text"],
-            (poem["x"], poem["y"]),
-            font,
-            scale,
-            color,
-            thickness,
-            cv2.LINE_AA
-        )
 
     frame = cv2.addWeighted(overlay, 0.85, frame, 0.15, 0)
 
