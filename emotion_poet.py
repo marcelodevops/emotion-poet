@@ -140,13 +140,24 @@ while True:
         if now - last_poem_time > cooldown:
             text = generate_poem(emotion, watch_time, distance)
 
+            words = text.split(" ")
+            base_x = random.randint(40, w - 400)    
+            base_y = random.randint(80, h - 40)
+
+            positions = []
+            x_cursor = base_x
+
+            for word in words:
+                positions.append([x_cursor, base_y])
+                x_cursor += len(word) * 12 + 10  # spacing
+
             poems.append({
-                "text": text,
-                "x": random.randint(40, w - 400),
-                "y": random.randint(80, h - 40),
+                "words": words,
+                "positions": positions,
                 "alpha": 255,
-                "drift": random.choice([-1, 0, 1]),
-                "emotion": emotion
+                "fractured": False,
+                "emotion": emotion,
+                "created": now
             })
 
             last_poem_time = now
