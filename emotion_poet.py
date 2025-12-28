@@ -88,10 +88,20 @@ def draw_fractured_box(frame, x, y, w, h, emotion):
             1
         )
 
+
 # =======================
 # MEMORY
-# =======================
-poems = []  # each: text, x, y, alpha, drift, emotion
+poems = []
+# each poem:
+# {
+#   "words": [...],
+#   "positions": [(x, y), ...],
+#   "alpha": 255,
+#   "fractured": False,
+#   "emotion": emotion,
+#   "created": time
+# }
+
 
 cap = cv2.VideoCapture(0)
 start_time = time.time()
