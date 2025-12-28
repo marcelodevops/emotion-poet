@@ -39,6 +39,7 @@ font_settings = {
 # TRUST MECHANIC
 # =======================
 TRUST_TIME = 25  # seconds before box disappears
+FRACTURE_DELAY = 6  # seconds before words fall apart
 
 # =======================
 # POEM GENERATION
