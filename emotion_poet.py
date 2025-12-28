@@ -197,26 +197,42 @@ while True:
     overlay = frame.copy()
 
     for poem in poems[:]:
-        poem["alpha"] -= 1
-        poem["y"] += poem["drift"]
+        age = now - poem["created"]
+
+        # trigger fracture
+        if not poem["fractured"] and age > FRACTURE_DELAY:
+            poem["fractured"] = True
+
+        font, scale, thickness = font_settings.get(poem["emotion"], font_settings["neutral"])
+
+        for i, word in enumerate(poem["words"]):
+            x, y = poem["positions"][i]
+
+            # falling behavior
+            if poem["fractured"]:
+                y += random.randint(1, 4)
+                poem["positions"][i][1] = y
+
+            poem["alpha"] -= 0.5
+            color = (int(poem["alpha"]), int(poem["alpha"]), int(poem["alpha"]))
+
+            if poem["alpha"] <= 0 or y > h:
+                continue
+
+            cv2.putText(
+                overlay,
+                word,
+                (x, y),
+                font,
+                scale,
+                color,
+                thickness,
+                cv2.LINE_AA
+            )
 
         if poem["alpha"] <= 0:
             poems.remove(poem)
-            continue
 
-        font, scale, thickness = font_settings.get(poem["emotion"], font_settings["neutral"])
-        color = (poem["alpha"], poem["alpha"], poem["alpha"])
-
-        cv2.putText(
-            overlay,
-            poem["text"],
-            (poem["x"], poem["y"]),
-            font,
-            scale,
-            color,
-            thickness,
-            cv2.LINE_AA
-        )
 
     frame = cv2.addWeighted(overlay, 0.85, frame, 0.15, 0)
 
